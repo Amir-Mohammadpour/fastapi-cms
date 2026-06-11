@@ -26,8 +26,8 @@ A simple asynchronous Content Management System API built with FastAPI, SQLAlche
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/async-cms-api.git
-cd async-cms-api
+git clone https://github.com/yourusername/fastapi-cms.git
+cd fastapi-cms
 
 
 2. Set up environment variables
