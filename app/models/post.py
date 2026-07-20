@@ -1,10 +1,13 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.user import User
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class Post(Base):
@@ -13,7 +16,6 @@ class Post(Base):
     id: Mapped[int] = mapped_column(
         primary_key=True,
         autoincrement=True,
-        index=True,
     )
 
     title: Mapped[str] = mapped_column(
@@ -40,7 +42,7 @@ class Post(Base):
     )
 
     author_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+        ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
 
@@ -48,3 +50,6 @@ class Post(Base):
         "User",
         back_populates="posts",
     )
+
+    def __repr__(self) -> str:
+        return f"<Post id={self.id} title={self.title!r} author_id={self.author_id}>"
