@@ -1,7 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..models.post import Post
-from ..schemas.post import PostCreate, PostUpdate
+
+from app.models.post import Post
+from app.schemas.post import PostCreate, PostUpdate
 
 
 async def get_post(db: AsyncSession, post_id: int) -> Post | None:
@@ -10,7 +11,9 @@ async def get_post(db: AsyncSession, post_id: int) -> Post | None:
 
 
 async def get_posts(db: AsyncSession, skip: int = 0, limit: int = 100) -> list[Post]:
-    result = await db.execute(select(Post).offset(skip).limit(limit))
+    result = await db.execute(
+        select(Post).order_by(Post.created_at.desc()).offset(skip).limit(limit)
+    )
     return result.scalars().all()
 
 
@@ -23,7 +26,9 @@ async def create_post(db: AsyncSession, post: PostCreate, user_id: int) -> Post:
 
 
 async def update_post(
-    db: AsyncSession, post_id: int, post_update: PostUpdate
+    db: AsyncSession,
+    post_id: int,
+    post_update: PostUpdate,
 ) -> Post | None:
     db_post = await get_post(db, post_id)
     if not db_post:
