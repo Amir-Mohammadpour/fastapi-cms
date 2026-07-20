@@ -1,19 +1,24 @@
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import timedelta
 
-from app.core.security import create_access_token, verify_password
+from app.core.config import settings
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    verify_password,
+)
 from app.crud import crud_user
 from app.database import get_db
-from app.schemas.user import User, UserCreate
 from app.schemas.token import Token
-from app.core.config import settings
+from app.schemas.user import UserCreate, UserRead
 
 router = APIRouter()
 
 
-@router.post("/register/", response_model=User, status_code=status.HTTP_201_CREATED)
+@router.post("/register/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def create_user_registration(
     user_in: UserCreate, db: AsyncSession = Depends(get_db)
 ):
@@ -29,7 +34,14 @@ async def create_user_registration(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
-    return await crud_user.create_user(db=db, user=user_in)
+
+    try:
+        return await crud_user.create_user(db=db, user=user_in)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
 
 
 @router.post("/login/", response_model=Token)
@@ -45,9 +57,24 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Inactive user",
+        )
+
+    token_data = {"sub": str(user.id)}
     access_token = create_access_token(
-        data={"sub": str(user.id)},  # ← باید string باشه
-        expires_delta=access_token_expires,
+        data=token_data,
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    refresh_token = create_refresh_token(
+        data=token_data,
+        expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+    )
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+    }
