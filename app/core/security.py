@@ -23,13 +23,14 @@ def get_password_hash(password: str) -> str:
 
 def _create_token(
     data: dict[str, Any],
-    expires_delta: timedelta | None = None,
+    token_type: str,
+    expires_delta: timedelta,
 ) -> str:
     to_encode = data.copy()
     now = datetime.now(timezone.utc)
     expire = now + expires_delta
 
-    to_encode.update({"exp": expire, "iat": now, "type": "access"})
+    to_encode.update({"exp": expire, "iat": now, "type": token_type})
 
     return jwt.encode(
         to_encode,
