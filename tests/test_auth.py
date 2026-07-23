@@ -27,7 +27,7 @@ async def test_register_duplicate_username(client: AsyncClient):
         json={
             "username": "duplicate_user",
             "email": "first@example.com",
-            "password": "pass123",
+            "password": "pass1234",
         },
     )
     response = await client.post(
@@ -35,7 +35,7 @@ async def test_register_duplicate_username(client: AsyncClient):
         json={
             "username": "duplicate_user",
             "email": "second@example.com",
-            "password": "pass123",
+            "password": "pass1234",
         },
     )
     assert response.status_code == 400
@@ -49,7 +49,7 @@ async def test_register_duplicate_email(client: AsyncClient):
         json={
             "username": "user_one",
             "email": "same@example.com",
-            "password": "pass123",
+            "password": "pass1234",
         },
     )
     response = await client.post(
@@ -57,7 +57,7 @@ async def test_register_duplicate_email(client: AsyncClient):
         json={
             "username": "user_two",
             "email": "same@example.com",
-            "password": "pass123",
+            "password": "pass1234",
         },
     )
     assert response.status_code == 400
@@ -68,7 +68,7 @@ async def test_register_duplicate_email(client: AsyncClient):
 async def test_register_invalid_email(client: AsyncClient):
     response = await client.post(
         "/auth/register/",
-        json={"username": "baduser", "email": "not-an-email", "password": "pass123"},
+        json={"username": "baduser", "email": "not-an-email", "password": "pass1234"},
     )
     assert response.status_code == 422
 
@@ -122,7 +122,7 @@ async def test_login_nonexistent_user(client: AsyncClient):
         "/auth/login/",
         data={
             "username": "nobody",
-            "password": "nopass",
+            "password": "nopassword",
         },
     )
     assert response.status_code == 401

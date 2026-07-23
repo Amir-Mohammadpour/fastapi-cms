@@ -72,11 +72,11 @@ def _decode_token(token: str, expected_type: str) -> dict[str, Any] | None:
         )
     except JWTError as exc:
         logger.warning("JWT decode failed: %s", exc)
-        return None
+        return {}
 
     if payload.get("type") != expected_type:
         logger.warning("Token type mismatch: expected %s token", expected_type)
-        return None
+        return {}
 
     return payload
 
