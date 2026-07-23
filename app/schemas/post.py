@@ -1,11 +1,11 @@
-from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+
+from pydantic import BaseModel, Field
 
 
 class PostBase(BaseModel):
-    title: str
-    content: str
+    title: str = Field(min_length=1, max_length=255)
+    content: str = Field(min_length=1)
 
 
 class PostCreate(PostBase):
@@ -13,14 +13,16 @@ class PostCreate(PostBase):
 
 
 class PostUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    content: str | None = Field(default=None, min_length=1)
+
+    model_config = {"extra": "forbid"}
 
 
-class Post(PostBase):
+class PostRead(PostBase):
     id: int
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
     author_id: int
 
     model_config = {"from_attributes": True}

@@ -1,49 +1,55 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_current_active_user
 from app.crud import crud_post
 from app.database import get_db
-from app.schemas.post import Post, PostCreate, PostUpdate
 from app.models.user import User
-from ..deps import get_current_user
+from app.schemas.post import PostCreate, PostRead, PostUpdate
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[Post])
+@router.get("/", response_model=list[PostRead])
 async def read_posts(
-    skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
 ):
     return await crud_post.get_posts(db, skip=skip, limit=limit)
 
 
-@router.get("/{post_id}/", response_model=Post)
+@router.get("/{post_id}/", response_model=PostRead)
 async def read_post(post_id: int, db: AsyncSession = Depends(get_db)):
     db_post = await crud_post.get_post(db, post_id=post_id)
     if db_post is None:
-        raise HTTPException(status_code=404, detail="Post not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+        )
     return db_post
 
 
-@router.post("/", response_model=Post, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=PostRead, status_code=status.HTTP_201_CREATED)
 async def create_post(
     post: PostCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
 ):
     return await crud_post.create_post(db=db, post=post, user_id=current_user.id)
 
 
-@router.put("/{post_id}/", response_model=Post)
+@router.put("/{post_id}/", response_model=PostRead)
 async def update_post(
     post_id: int,
     post_update: PostUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
 ):
     db_post = await crud_post.get_post(db, post_id=post_id)
     if db_post is None:
-        raise HTTPException(status_code=404, detail="Post not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+        )
     if db_post.author_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -53,7 +59,10 @@ async def update_post(
         db=db, post_id=post_id, post_update=post_update
     )
     if updated_post is None:
-        raise HTTPException(status_code=500, detail="Failed to update post")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found",
+        )
     return updated_post
 
 
@@ -61,11 +70,13 @@ async def update_post(
 async def delete_post(
     post_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
 ):
     db_post = await crud_post.get_post(db, post_id=post_id)
     if db_post is None:
-        raise HTTPException(status_code=404, detail="Post not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+        )
     if db_post.author_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

@@ -5,5 +5,6 @@ services:
       - "8000:8000"
     env_file:
       - .env
-    volumes:
-      - ./sql_app.db:/app/sql_app.db
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@host.docker.internal:5432/${POSTGRES_DB}
+    restart: unless-stopped
